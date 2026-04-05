@@ -1,0 +1,48 @@
+name: Claude Code
+
+on:
+  # Trigger when someone comments on an issue or PR
+  issue_comment:
+    types: [created]
+  # Trigger when someone comments on a PR review
+  pull_request_review_comment:
+    types: [created]
+  # Trigger when an issue is opened or assigned
+  issues:
+    types: [opened, assigned]
+  # Trigger when a PR review is submitted
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    # Only run if the comment/issue body contains '@claude'
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Allow Claude to push code changes
+      pull-requests: write  # Allow Claude to comment on PRs
+      issues: write         # Allow Claude to comment on issues
+      id-token: write       # Required for OIDC auth
+      actions: read         # Allow Claude to read CI results on PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Optional: Change the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+
+          # Optional: Auto-trigger when a specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"

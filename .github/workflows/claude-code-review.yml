@@ -1,0 +1,56 @@
+name: Claude Code Review
+
+on:
+  # Trigger on new PRs and when new commits are pushed to an open PR
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read        # Read the repo code
+      pull-requests: write  # Post review comments on the PR
+      id-token: write       # Required for OIDC auth
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Claude PR Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Show a progress comment while Claude is reviewing
+          track_progress: true
+          direct_prompt: |
+            Please review this pull request and provide feedback on the following areas:
+
+            1. **Code Quality**
+               - Clean code principles and best practices
+               - Proper error handling and edge cases
+               - Code readability and maintainability
+
+            2. **Security**
+               - Potential security vulnerabilities
+               - Input sanitization and validation
+               - Authentication/authorization logic
+
+            3. **Performance**
+               - Potential performance bottlenecks
+               - Inefficient database queries or API calls
+               - Memory leaks or resource issues
+
+            4. **Testing**
+               - Adequate test coverage for new code
+               - Quality of test cases and edge cases
+               - Missing test scenarios
+
+            5. **Documentation**
+               - Code comments where logic is non-obvious
+               - README updates for new features
+               - API documentation accuracy
+
+            Post inline comments on specific lines for targeted feedback,
+            and a top-level summary comment with overall observations.
